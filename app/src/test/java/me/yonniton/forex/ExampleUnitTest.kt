@@ -1,4 +1,4 @@
-package me.yonniton.android.experiment
+package me.yonniton.forex
 
 import org.junit.Test
 

@@ -1,4 +1,4 @@
-package me.yonniton.android.experiment.main
+package me.yonniton.forex.ui.main
 
 import androidx.lifecycle.ViewModel
 
