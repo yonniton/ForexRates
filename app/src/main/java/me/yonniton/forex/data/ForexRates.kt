@@ -1,6 +1,12 @@
 package me.yonniton.forex.data
 
 import com.google.gson.annotations.SerializedName
+import io.reactivex.Single
+import retrofit2.Retrofit
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.GET
+import retrofit2.http.Query
 import java.util.*
 
 /**
@@ -17,4 +23,22 @@ class ForexRates(
 
     @SerializedName("rates")
     val rates: Map<CurrencyCode, Double>
-)
+) {
+
+    companion object {
+
+        private const val DOMAIN = "https://revolut.duckdns.org/"
+
+        val ENDPOINT: Endpoint = Retrofit.Builder()
+            .baseUrl(DOMAIN)
+            .addConverterFactory(GsonConverterFactory.create())
+            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+            .build()
+            .create(Endpoint::class.java)
+    }
+
+    interface Endpoint {
+        @GET("latest")
+        fun getForexRates(@Query("base") base: CurrencyCode): Single<ForexRates>
+    }
+}
