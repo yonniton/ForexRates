@@ -1,7 +1,9 @@
 package me.yonniton.forex.ui.main
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LifecycleObserver
 
-class MainViewModel : ViewModel() {
+class MainViewModel(application: Application) : LifecycleObserver, AndroidViewModel(application) {
     // TODO: Implement the ViewModel
 }
