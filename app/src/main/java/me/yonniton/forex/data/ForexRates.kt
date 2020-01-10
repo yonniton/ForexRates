@@ -41,4 +41,15 @@ class ForexRates(
         @GET("latest")
         fun getForexRates(@Query("base") base: CurrencyCode): Single<ForexRates>
     }
+
+    /** converts [baseAmount] quantity of currency [base] to some quantity of currency [quote] */
+    fun convert(baseAmount: Number, quote: CurrencyCode): Double {
+        return if (quote == base) {
+            baseAmount.toDouble()
+        } else {
+            rates[quote]
+                ?.let { rate -> baseAmount.toDouble() * rate }
+                ?: throw IllegalStateException("missing rate for currency[$quote]")
+        }
+    }
 }
