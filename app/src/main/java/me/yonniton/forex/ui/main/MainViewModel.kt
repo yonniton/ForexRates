@@ -23,8 +23,9 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
     val ratesVisibility = ObservableField<Int>(GONE)
     val ratesAdapter = ObservableField<CurrenciesAdapter>()
 
-    private val ratesQuery = ForexRates.ENDPOINT
-        .getForexRates(CurrencyCode.EUR)
+    internal var endpoint: ForexRates.Endpoint = ForexRates.ENDPOINT
+
+    var baseCurrency: CurrencyCode = CurrencyCode.EUR
 
     private var disposable: Disposable? = null
         set(value) {
@@ -34,8 +35,10 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     private fun queryRates() {
-        ratesQuery
+        endpoint.getForexRates(baseCurrency)
+            .delay(1, TimeUnit.SECONDS)
             .timeout(5, TimeUnit.SECONDS)
+            .repeat()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
@@ -43,7 +46,12 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
                 { ratesResponse ->
                     progressVisibility.set(GONE)
                     ratesVisibility.set(VISIBLE)
-                    ratesAdapter.set(CurrenciesAdapter(ratesResponse))
+                    ratesAdapter.get()
+                        ?.apply {
+                            rates = ratesResponse
+                            notifyDataSetChanged()
+                        }
+                        ?: run { ratesAdapter.set(CurrenciesAdapter(ratesResponse)) }
                 },
                 // request failure, blank screen with error Toast
                 {
