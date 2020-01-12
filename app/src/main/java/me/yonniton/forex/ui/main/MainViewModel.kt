@@ -4,6 +4,7 @@ import android.app.Application
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.widget.Toast
+import androidx.databinding.ObservableDouble
 import androidx.databinding.ObservableField
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.Lifecycle
@@ -22,6 +23,9 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
     val progressVisibility = ObservableField<Int>(VISIBLE)
     val ratesVisibility = ObservableField<Int>(GONE)
     val ratesAdapter = ObservableField<CurrenciesAdapter>()
+    val baseAmount = ObservableDouble(1.0)
+
+    internal var rates: ForexRates? = null
 
     internal var endpoint: ForexRates.Endpoint = ForexRates.ENDPOINT
 
@@ -48,10 +52,10 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
                     ratesVisibility.set(VISIBLE)
                     ratesAdapter.get()
                         ?.apply {
-                            rates = ratesResponse
-                            notifyDataSetChanged()
+                            viewModel.rates = ratesResponse
+                            notifyItemRangeChanged(1, itemCount - 1)
                         }
-                        ?: run { ratesAdapter.set(CurrenciesAdapter(ratesResponse)) }
+                        ?: run { ratesAdapter.set(CurrenciesAdapter(this@MainViewModel)) }
                 },
                 // request failure, blank screen with error Toast
                 {
