@@ -30,6 +30,11 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
     internal var endpoint: ForexRates.Endpoint = ForexRates.ENDPOINT
 
     var baseCurrency: CurrencyCode = CurrencyCode.EUR
+        set(value) {
+            field = value
+            ratesAdapter.set(null)
+            queryRates()
+        }
 
     private var disposable: Disposable? = null
         set(value) {
@@ -53,9 +58,11 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
                     ratesAdapter.get()
                         ?.apply {
                             viewModel.rates = ratesResponse
-                            notifyItemRangeChanged(1, itemCount - 1)
+                            notifyItemRangeChanged(0, itemCount - 1)
                         }
-                        ?: run { ratesAdapter.set(CurrenciesAdapter(this@MainViewModel)) }
+                        ?: CurrenciesAdapter(this@MainViewModel).also { newAdapter ->
+                            ratesAdapter.set(newAdapter)
+                        }
                 },
                 // request failure, blank screen with error Toast
                 {

@@ -39,6 +39,9 @@ class CurrenciesAdapter(internal val viewModel: MainViewModel) : RecyclerView.Ad
                 { throw IllegalStateException("missing rate for currency[$currency]") }
             ) * viewModel.baseAmount.get()
             holder.binding.currencyAmount.setText("%.2f".format(quoteAmount))
+            holder.binding.currencyFlag.setOnClickListener {
+                viewModel.baseCurrency = currency
+            }
         }
 
         with(holder.binding) {
