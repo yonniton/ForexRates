@@ -78,4 +78,63 @@ class MainViewModelTest {
         }
         verify(mockEndpoint, only()).getForexRates(viewmodel.baseCurrency)
     }
+
+    @Test
+    fun `given MainViewModel started a ForexRates query, when the query fails, then the rates-list should not be shown`() {
+        mockEndpoint.stub {
+            on { getForexRates(any()) } doReturn Single.timer(1, TimeUnit.SECONDS).map<ForexRates> { throw IOException() }
+        }
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        scheduler.advanceTimeBy(999, TimeUnit.MILLISECONDS)
+        with(viewmodel) {
+            assertThat("the progress-spinner should be shown", progressVisibility.get(), equalTo(VISIBLE))
+            assertThat("the rates-list should be hidden", ratesVisibility.get(), equalTo(GONE))
+            assertThat("there should be no rates-response", rates, nullValue())
+            assertThat("there should be no rates-adapter", ratesAdapter.get(), nullValue())
+        }
+        scheduler.advanceTimeTo(1, TimeUnit.SECONDS)
+        with(viewmodel) {
+            assertThat("the progress-spinner should be hidden", progressVisibility.get(), equalTo(GONE))
+            assertThat("the rates-list should be hidden", ratesVisibility.get(), equalTo(GONE))
+            assertThat("there should be no rates-response", rates, nullValue())
+            assertThat("there should be no rates-adapter", ratesAdapter.get(), nullValue())
+        }
+        verify(mockEndpoint, only()).getForexRates(viewmodel.baseCurrency)
+    }
+
+    @Test
+    fun `given MainViewModel started a ForexRates query, when a response arrives late, then the rates-list should not be shown`() {
+        mockEndpoint.stub {
+            on { getForexRates(any()) } doReturn Single.just(rates).delay(5, TimeUnit.SECONDS)
+        }
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        scheduler.advanceTimeBy(4999, TimeUnit.MILLISECONDS)
+        with(viewmodel) {
+            assertThat("the progress-spinner should be shown", progressVisibility.get(), equalTo(VISIBLE))
+            assertThat("the rates-list should be hidden", ratesVisibility.get(), equalTo(GONE))
+            assertThat("there should be no rates-response", rates, nullValue())
+            assertThat("there should be no rates-adapter", ratesAdapter.get(), nullValue())
+        }
+        scheduler.advanceTimeTo(5, TimeUnit.SECONDS)
+        with(viewmodel) {
+            assertThat("the progress-spinner should be hidden", progressVisibility.get(), equalTo(GONE))
+            assertThat("the rates-list should be hidden", ratesVisibility.get(), equalTo(GONE))
+            assertThat("there should be no rates-response", rates, nullValue())
+            assertThat("there should be no rates-adapter", ratesAdapter.get(), nullValue())
+        }
+        verify(mockEndpoint, only()).getForexRates(viewmodel.baseCurrency)
+    }
+
+    @Test
+    fun `given MainViewModel started a ForexRates query, when a response arrives on-time, then it should show the rates-list`() {
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        verify(mockEndpoint, only()).getForexRates(viewmodel.baseCurrency)
+        scheduler.advanceTimeBy(4999, TimeUnit.MILLISECONDS)
+        with(viewmodel) {
+            assertThat("the progress-spinner should be hidden", progressVisibility.get(), equalTo(GONE))
+            assertThat("the rates-list should be shown", ratesVisibility.get(), equalTo(VISIBLE))
+            assertThat("there should be a rates-response", rates, sameInstance(this@MainViewModelTest.rates))
+            assertThat("there should be a rates-adapter", ratesAdapter.get(), notNullValue())
+        }
+    }
 }
