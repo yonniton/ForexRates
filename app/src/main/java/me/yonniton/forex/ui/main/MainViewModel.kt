@@ -55,9 +55,9 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
                 { ratesResponse ->
                     progressVisibility.set(GONE)
                     ratesVisibility.set(VISIBLE)
+                    rates = ratesResponse
                     ratesAdapter.get()
                         ?.apply {
-                            viewModel.rates = ratesResponse
                             notifyItemRangeChanged(0, itemCount - 1)
                         }
                         ?: CurrenciesAdapter(this@MainViewModel).also { newAdapter ->

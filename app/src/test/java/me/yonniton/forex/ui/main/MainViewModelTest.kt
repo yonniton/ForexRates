@@ -20,11 +20,13 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.io.IOException
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
+@Config(manifest = Config.NONE)
 class MainViewModelTest {
 
     private lateinit var scheduler: TestScheduler
@@ -127,14 +129,24 @@ class MainViewModelTest {
 
     @Test
     fun `given MainViewModel started a ForexRates query, when a response arrives on-time, then it should show the rates-list`() {
+        mockEndpoint.stub {
+            on { getForexRates(any()) } doReturn Single.just(rates).delay(3, TimeUnit.SECONDS)
+        }
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        verify(mockEndpoint, only()).getForexRates(viewmodel.baseCurrency)
-        scheduler.advanceTimeBy(4999, TimeUnit.MILLISECONDS)
+        scheduler.advanceTimeBy(3, TimeUnit.SECONDS)
+        with(viewmodel) {
+            assertThat("the progress-spinner should be shown", progressVisibility.get(), equalTo(VISIBLE))
+            assertThat("the rates-list should be hidden", ratesVisibility.get(), equalTo(GONE))
+            assertThat("there should be no rates-response", rates, nullValue())
+            assertThat("there should be no rates-adapter", ratesAdapter.get(), nullValue())
+        }
+        scheduler.advanceTimeBy(1, TimeUnit.SECONDS)
         with(viewmodel) {
             assertThat("the progress-spinner should be hidden", progressVisibility.get(), equalTo(GONE))
             assertThat("the rates-list should be shown", ratesVisibility.get(), equalTo(VISIBLE))
             assertThat("there should be a rates-response", rates, sameInstance(this@MainViewModelTest.rates))
             assertThat("there should be a rates-adapter", ratesAdapter.get(), notNullValue())
         }
+        verify(mockEndpoint, only()).getForexRates(viewmodel.baseCurrency)
     }
 }
