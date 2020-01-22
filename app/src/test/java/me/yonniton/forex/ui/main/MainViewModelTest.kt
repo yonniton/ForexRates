@@ -149,4 +149,20 @@ class MainViewModelTest {
         }
         verify(mockEndpoint, only()).getForexRates(viewmodel.baseCurrency)
     }
+
+    @Test
+    fun `given MainViewModel started a ForexRates query, when several responses arrives on-time, then each response should update the rates-list`() {
+        mockEndpoint.stub {
+            on { getForexRates(any()) } doReturn Single.just(rates).delay(1, TimeUnit.SECONDS)
+        }
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        scheduler.advanceTimeBy(3, TimeUnit.SECONDS)
+        with(viewmodel) {
+            assertThat("the progress-spinner should be hidden", progressVisibility.get(), equalTo(GONE))
+            assertThat("the rates-list should be shown", ratesVisibility.get(), equalTo(VISIBLE))
+            assertThat("there should be a rates-response", rates, sameInstance(this@MainViewModelTest.rates))
+            assertThat("there should be a rates-adapter", ratesAdapter.get(), notNullValue())
+        }
+        verify(mockEndpoint, times(3)).getForexRates(viewmodel.baseCurrency)
+    }
 }
