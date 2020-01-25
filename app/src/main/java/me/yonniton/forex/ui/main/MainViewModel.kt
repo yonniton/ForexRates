@@ -31,11 +31,6 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
     internal var endpoint: ForexRates.Endpoint = ForexRates.ENDPOINT
 
     var baseCurrency: CurrencyCode = CurrencyCode.EUR
-        set(value) {
-            field = value
-            ratesAdapter.set(null)
-            queryRates()
-        }
 
     private var disposable: Disposable? = null
         set(value) {

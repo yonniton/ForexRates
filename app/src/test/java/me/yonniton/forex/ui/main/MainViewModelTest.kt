@@ -13,6 +13,7 @@ import io.reactivex.android.plugins.RxAndroidPlugins
 import io.reactivex.internal.schedulers.ExecutorScheduler
 import io.reactivex.plugins.RxJavaPlugins
 import io.reactivex.schedulers.TestScheduler
+import me.yonniton.forex.data.CurrencyCode
 import me.yonniton.forex.data.ForexRates
 import org.hamcrest.Matchers.*
 import org.junit.Assert.assertThat
@@ -153,5 +154,37 @@ class MainViewModelTest {
         }
         assertThat("there should be 3 rates-responses", ratesCollection, hasSize(3))
         verify(mockEndpoint, times(4)).getForexRates(viewmodel.baseCurrency)
+    }
+
+    @Test
+    fun `given MainViewModel started a ForexRates query, when a new base currency is assigned, then the next query should use the new base currency`() {
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        // default EUR query fired
+        scheduler.triggerActions()
+        verify(mockEndpoint).getForexRates(CurrencyCode.EUR)
+
+        scheduler.advanceTimeBy(500, TimeUnit.MILLISECONDS)
+        // AUD assigned
+        viewmodel.baseCurrency = CurrencyCode.AUD
+        // AUD query not fired yet
+        verify(mockEndpoint).getForexRates(CurrencyCode.EUR)
+
+        // AUD query fired
+        scheduler.advanceTimeBy(500, TimeUnit.MILLISECONDS)
+        verify(mockEndpoint).getForexRates(CurrencyCode.AUD)
+
+        scheduler.advanceTimeBy(500, TimeUnit.MILLISECONDS)
+        // GBP assigned
+        viewmodel.baseCurrency = CurrencyCode.GBP
+        // GBP query not fired yet
+        verify(mockEndpoint).getForexRates(CurrencyCode.AUD)
+
+        // GBP query fired
+        scheduler.advanceTimeBy(500, TimeUnit.MILLISECONDS)
+        verify(mockEndpoint).getForexRates(CurrencyCode.GBP)
+
+        // GBP query fired again
+        scheduler.advanceTimeBy(1, TimeUnit.SECONDS)
+        verify(mockEndpoint, times(2)).getForexRates(CurrencyCode.GBP)
     }
 }
