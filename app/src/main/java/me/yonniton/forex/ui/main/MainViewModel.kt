@@ -10,6 +10,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
@@ -44,10 +45,11 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     private fun queryRates() {
-        endpoint.getForexRates(baseCurrency)
-            .delay(1, TimeUnit.SECONDS)
+        Observable.interval(0, 1, TimeUnit.SECONDS)
+            .concatMap {
+                endpoint.getForexRates(baseCurrency).toObservable()
+            }
             .timeout(5, TimeUnit.SECONDS)
-            .repeat()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(

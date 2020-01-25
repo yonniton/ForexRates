@@ -31,9 +31,13 @@ class MainViewModelTest {
 
     private lateinit var scheduler: TestScheduler
     private lateinit var mockEndpoint: ForexRates.Endpoint
-    private lateinit var rates: ForexRates
     private lateinit var lifecycleRegistry: LifecycleRegistry
     private lateinit var viewmodel: MainViewModel
+
+    private val ratesResponse: Single<ForexRates> = Single.fromCallable {
+        ClassLoader.getSystemResourceAsStream("rates.json")
+            .use { Gson().fromJson(it.reader(), ForexRates::class.java) }
+    }
 
     @Before
     fun setUp() {
@@ -48,11 +52,9 @@ class MainViewModelTest {
             }
         }
 
-        rates = ClassLoader.getSystemResourceAsStream("rates.json")
-            .use { Gson().fromJson(it.reader(), ForexRates::class.java) }
         viewmodel = MainViewModel(ApplicationProvider.getApplicationContext())
         mockEndpoint = mock<ForexRates.Endpoint> {
-            on { getForexRates(any()) } doReturn Single.just(rates)
+            on { getForexRates(any()) } doReturn ratesResponse.delay(1, TimeUnit.SECONDS)
         }.also { viewmodel.endpoint = it }
         lifecycleRegistry = LifecycleRegistry(mock())
             .also { it.addObserver(viewmodel) }
@@ -72,6 +74,7 @@ class MainViewModelTest {
     @Test
     fun `when MainViewModel resumes, then it should be in the loading state, and it should have started a ForexRates query`() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        scheduler.triggerActions()
         with(viewmodel) {
             assertThat("the progress-spinner should be shown", progressVisibility.get(), equalTo(VISIBLE))
             assertThat("the rates-list should be hidden", ratesVisibility.get(), equalTo(GONE))
@@ -87,7 +90,7 @@ class MainViewModelTest {
             on { getForexRates(any()) } doReturn Single.timer(1, TimeUnit.SECONDS).map<ForexRates> { throw IOException() }
         }
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        scheduler.advanceTimeBy(999, TimeUnit.MILLISECONDS)
+        scheduler.triggerActions()
         with(viewmodel) {
             assertThat("the progress-spinner should be shown", progressVisibility.get(), equalTo(VISIBLE))
             assertThat("the rates-list should be hidden", ratesVisibility.get(), equalTo(GONE))
@@ -107,7 +110,7 @@ class MainViewModelTest {
     @Test
     fun `given MainViewModel started a ForexRates query, when a response arrives late, then the rates-list should not be shown`() {
         mockEndpoint.stub {
-            on { getForexRates(any()) } doReturn Single.just(rates).delay(5, TimeUnit.SECONDS)
+            on { getForexRates(any()) } doReturn ratesResponse.delay(5, TimeUnit.SECONDS)
         }
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         scheduler.advanceTimeBy(4999, TimeUnit.MILLISECONDS)
@@ -129,40 +132,26 @@ class MainViewModelTest {
 
     @Test
     fun `given MainViewModel started a ForexRates query, when a response arrives on-time, then it should show the rates-list`() {
-        mockEndpoint.stub {
-            on { getForexRates(any()) } doReturn Single.just(rates).delay(3, TimeUnit.SECONDS)
-        }
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        scheduler.advanceTimeBy(3, TimeUnit.SECONDS)
-        with(viewmodel) {
-            assertThat("the progress-spinner should be shown", progressVisibility.get(), equalTo(VISIBLE))
-            assertThat("the rates-list should be hidden", ratesVisibility.get(), equalTo(GONE))
-            assertThat("there should be no rates-response", rates, nullValue())
-            assertThat("there should be no rates-adapter", ratesAdapter.get(), nullValue())
-        }
         scheduler.advanceTimeBy(1, TimeUnit.SECONDS)
         with(viewmodel) {
             assertThat("the progress-spinner should be hidden", progressVisibility.get(), equalTo(GONE))
             assertThat("the rates-list should be shown", ratesVisibility.get(), equalTo(VISIBLE))
-            assertThat("there should be a rates-response", rates, sameInstance(this@MainViewModelTest.rates))
+            assertThat("there should be a rates-response", rates, notNullValue())
             assertThat("there should be a rates-adapter", ratesAdapter.get(), notNullValue())
         }
-        verify(mockEndpoint, only()).getForexRates(viewmodel.baseCurrency)
+        verify(mockEndpoint, times(2)).getForexRates(viewmodel.baseCurrency)
     }
 
     @Test
-    fun `given MainViewModel started a ForexRates query, when several responses arrives on-time, then each response should update the rates-list`() {
-        mockEndpoint.stub {
-            on { getForexRates(any()) } doReturn Single.just(rates).delay(1, TimeUnit.SECONDS)
-        }
+    fun `given MainViewModel started a ForexRates query, when several responses arrive on-time, then each response should update the rates-list`() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        scheduler.advanceTimeBy(3, TimeUnit.SECONDS)
-        with(viewmodel) {
-            assertThat("the progress-spinner should be hidden", progressVisibility.get(), equalTo(GONE))
-            assertThat("the rates-list should be shown", ratesVisibility.get(), equalTo(VISIBLE))
-            assertThat("there should be a rates-response", rates, sameInstance(this@MainViewModelTest.rates))
-            assertThat("there should be a rates-adapter", ratesAdapter.get(), notNullValue())
+        val ratesCollection = mutableSetOf<ForexRates>()
+        repeat(3) {
+            scheduler.advanceTimeBy(1, TimeUnit.SECONDS)
+            viewmodel.rates?.also { ratesCollection.add(it) }
         }
-        verify(mockEndpoint, times(3)).getForexRates(viewmodel.baseCurrency)
+        assertThat("there should be 3 rates-responses", ratesCollection, hasSize(3))
+        verify(mockEndpoint, times(4)).getForexRates(viewmodel.baseCurrency)
     }
 }
