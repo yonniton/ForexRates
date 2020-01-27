@@ -6,7 +6,7 @@
     <data>
         <variable
             name="viewModel"
-            type="me.yonniton.forex.ui.main.MainViewModel" />
+            type="me.yonniton.forex.ui.CurrenciesAdapter.CurrencyItemHolder" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -23,6 +23,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
+            imageResource="@{viewModel.flag, default=@drawable/ic_flag_gbp}"
             tools:ignore="ContentDescription"
             tools:src="@drawable/ic_flag_gbp" />
 
@@ -36,6 +37,7 @@
             android:textColor="@android:color/black"
             android:textStyle="bold"
             android:textAllCaps="true"
+            android:text="@{viewModel.code}"
             app:layout_constraintTop_toTopOf="@+id/currency_flag"
             app:layout_constraintEnd_toStartOf="@+id/currency_amount"
             app:layout_constraintStart_toEndOf="@+id/currency_flag"
@@ -50,6 +52,7 @@
             android:layout_marginStart="16dp"
             android:textAppearance="?android:attr/textAppearanceSmall"
             android:textColor="@android:color/black"
+            android:text="@{viewModel.name}"
             app:layout_constraintEnd_toStartOf="@+id/currency_amount"
             app:layout_constraintStart_toEndOf="@+id/currency_flag"
             app:layout_constraintBottom_toBottomOf="@+id/currency_flag"
@@ -68,6 +71,7 @@
             android:textAlignment="textEnd"
             android:textSize="22sp"
             android:enabled="false"
+            android:text="@{viewModel.quoteAmount}"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
