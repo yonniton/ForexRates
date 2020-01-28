@@ -28,6 +28,17 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
 
     internal var rates: ForexRates? = null
 
+    private val currencyItems: List<CurrenciesAdapter.CurrencyItem>
+        get() {
+            return rates?.let {
+                val baseItem = CurrenciesAdapter.CurrencyItem(it.base, 1.0)
+                val quoteItems = it.rates.map { ratesEntry ->
+                    CurrenciesAdapter.CurrencyItem(ratesEntry.key, ratesEntry.value)
+                }
+                listOf(baseItem).plus(quoteItems)
+            } ?: emptyList()
+        }
+
     internal var endpoint: ForexRates.Endpoint = ForexRates.ENDPOINT
 
     var baseCurrency: CurrencyCode = CurrencyCode.EUR
@@ -55,9 +66,10 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
                     rates = ratesResponse
                     ratesAdapter.get()
                         ?.apply {
-                            notifyItemRangeChanged(0, itemCount - 1)
+                            submitList(currencyItems)
                         }
                         ?: CurrenciesAdapter(this@MainViewModel).also { newAdapter ->
+                            newAdapter.submitList(currencyItems)
                             ratesAdapter.set(newAdapter)
                         }
                 },

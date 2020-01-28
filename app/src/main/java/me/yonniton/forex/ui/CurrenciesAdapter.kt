@@ -6,13 +6,27 @@ import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ObservableField
 import androidx.databinding.ObservableInt
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import me.yonniton.forex.R
 import me.yonniton.forex.data.CurrencyCode
 import me.yonniton.forex.databinding.ForexRatesListItemBinding
 import me.yonniton.forex.ui.main.MainViewModel
 
-class CurrenciesAdapter(internal val viewModel: MainViewModel) : RecyclerView.Adapter<CurrenciesAdapter.CurrencyItemHolder>() {
+class CurrenciesAdapter(internal val viewModel: MainViewModel) : ListAdapter<CurrenciesAdapter.CurrencyItem, CurrenciesAdapter.CurrencyItemHolder>(DIFF_CALLBACK) {
+
+    companion object {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<CurrencyItem>() {
+            override fun areItemsTheSame(oldItem: CurrencyItem, newItem: CurrencyItem): Boolean {
+                return oldItem.currency == newItem.currency
+            }
+
+            override fun areContentsTheSame(oldItem: CurrencyItem, newItem: CurrencyItem): Boolean {
+                return oldItem == newItem
+            }
+        }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CurrencyItemHolder {
         return DataBindingUtil.inflate<ForexRatesListItemBinding>(
@@ -66,6 +80,11 @@ class CurrenciesAdapter(internal val viewModel: MainViewModel) : RecyclerView.Ad
             it.rates.entries.size + 1  // base currency + the set of quote currencies
         } ?: 0
     }
+
+    data class CurrencyItem(
+        val currency: CurrencyCode,
+        var amount: Double = 0.0
+    )
 
     class CurrencyItemHolder(internal val binding: ForexRatesListItemBinding) : RecyclerView.ViewHolder(binding.root) {
         val flag = ObservableInt(android.R.drawable.ic_menu_myplaces)
