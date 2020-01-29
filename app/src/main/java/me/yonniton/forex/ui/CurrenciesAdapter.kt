@@ -2,6 +2,7 @@ package me.yonniton.forex.ui
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.widget.doOnTextChanged
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ObservableField
 import androidx.databinding.ObservableInt
@@ -48,6 +49,11 @@ class CurrenciesAdapter(internal val viewModel: MainViewModel) : ListAdapter<Cur
             holder.quoteAmount.set("%.2f".format(viewModel.baseAmount.get()))
             holder.binding.currencyAmount.apply {
                 isEnabled = true
+                doOnTextChanged { text, _, _, _ ->
+                    text?.toString()
+                        ?.toDoubleOrNull()
+                        ?.also { viewModel.baseAmount.set(it) }
+                }
             }
         }
         // item[position > 0] in the adapter shall be a quote currency
