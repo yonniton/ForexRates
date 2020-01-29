@@ -1,6 +1,5 @@
 package me.yonniton.forex.ui
 
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
@@ -43,36 +42,28 @@ class CurrenciesAdapter(internal val viewModel: MainViewModel) : ListAdapter<Cur
     }
 
     override fun onBindViewHolder(holder: CurrencyItemHolder, position: Int) {
-        val rates = viewModel.rates ?: throw IllegalStateException("missing forex rates")
-        val currency: CurrencyCode
+        val currencyItem = getItem(position)
         // item[0] in the adapter shall be the base currency
         if (position < 1) {
-            currency = rates.base
+            holder.quoteAmount.set("%.2f".format(viewModel.baseAmount.get()))
             holder.binding.currencyAmount.apply {
                 isEnabled = true
-                setText("%.2f".format(1.0))
             }
         }
         // item[position > 0] in the adapter shall be a quote currency
         else {
-            currency = rates.rates.keys.elementAt(position - 1)
-            val quoteAmount: Double = rates.rates.getOrElse(
-                currency,
-                { throw IllegalStateException("missing rate for currency[$currency]") }
-            ) * viewModel.baseAmount.get()
+            val quoteAmount: Double = currencyItem.amount * viewModel.baseAmount.get()
             holder.quoteAmount.set("%.2f".format(quoteAmount))
             holder.binding.currencyFlag.setOnClickListener {
-                viewModel.baseCurrency = currency
+                viewModel.baseCurrency = currencyItem.currency
             }
         }
 
-        holder.binding.viewModel
-            ?.takeIf { !TextUtils.equals(it.code.get(), currency.name) }
-            ?.apply {
-                flag.set(currency.displayIcon)
-                code.set(currency.name)
-                name.set(currency.displayName)
-            }
+        holder.apply {
+            flag.set(currencyItem.currency.displayIcon)
+            code.set(currencyItem.currency.name)
+            name.set(currencyItem.currency.displayName)
+        }
     }
 
     override fun getItemCount(): Int {
