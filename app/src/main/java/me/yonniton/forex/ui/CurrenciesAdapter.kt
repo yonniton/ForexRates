@@ -59,6 +59,7 @@ class CurrenciesAdapter(internal val viewModel: MainViewModel) : ListAdapter<Cur
         // item[0] in the adapter shall be the base currency
         if (position < 1) {
             holder.quoteAmount.set("%.2f".format(viewModel.baseAmount.get()))
+            holder.itemView.setOnClickListener(null)
             holder.binding.currencyAmount.apply {
                 isEnabled = true
                 doOnTextChanged { text, _, _, _ ->
@@ -73,7 +74,7 @@ class CurrenciesAdapter(internal val viewModel: MainViewModel) : ListAdapter<Cur
         else {
             val quoteAmount: Double = currencyItem.amount * viewModel.baseAmount.get()
             holder.quoteAmount.set("%.2f".format(quoteAmount))
-            holder.binding.currencyFlag.setOnClickListener {
+            holder.itemView.setOnClickListener {
                 viewModel.baseCurrency = currencyItem.currency
             }
         }
