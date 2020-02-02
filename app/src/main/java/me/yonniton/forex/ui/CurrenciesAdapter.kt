@@ -55,6 +55,7 @@ class CurrenciesAdapter(internal val viewModel: MainViewModel) : ListAdapter<Cur
                         ?.also { viewModel.baseAmount.set(it) }
                 }
             }
+            holder.setIsRecyclable(false)
         }
         // item[position > 0] in the adapter shall be a quote currency
         else {
