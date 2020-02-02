@@ -71,6 +71,11 @@ class MainViewModel(application: Application) : LifecycleObserver, AndroidViewMo
                         ?: CurrenciesAdapter(this@MainViewModel).also { newAdapter ->
                             newAdapter.submitList(currencyItems)
                             ratesAdapter.set(newAdapter)
+                            baseAmount.addOnPropertyChangedCallback(object : androidx.databinding.Observable.OnPropertyChangedCallback() {
+                                override fun onPropertyChanged(sender: androidx.databinding.Observable?, propertyId: Int) {
+                                    newAdapter.notifyItemRangeChanged(1, newAdapter.itemCount - 1)
+                                }
+                            })
                         }
                 },
                 // request failure, blank screen with error Toast
