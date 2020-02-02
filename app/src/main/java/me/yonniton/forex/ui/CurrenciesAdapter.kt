@@ -17,6 +17,10 @@ import me.yonniton.forex.ui.main.MainViewModel
 class CurrenciesAdapter(internal val viewModel: MainViewModel) : ListAdapter<CurrenciesAdapter.CurrencyItem, CurrenciesAdapter.CurrencyItemHolder>(DIFF_CALLBACK) {
 
     companion object {
+
+        internal const val CURRENCY = 1
+        internal const val AMOUNT = 2
+
         private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<CurrencyItem>() {
             override fun areItemsTheSame(oldItem: CurrencyItem, newItem: CurrencyItem): Boolean {
                 return oldItem.currency == newItem.currency
@@ -24,6 +28,14 @@ class CurrenciesAdapter(internal val viewModel: MainViewModel) : ListAdapter<Cur
 
             override fun areContentsTheSame(oldItem: CurrencyItem, newItem: CurrencyItem): Boolean {
                 return oldItem == newItem
+            }
+
+            override fun getChangePayload(oldItem: CurrencyItem, newItem: CurrencyItem): Any? {
+                return when {
+                    oldItem.currency != newItem.currency -> CURRENCY
+                    oldItem.amount != newItem.amount -> AMOUNT
+                    else -> null
+                }
             }
         }
     }
